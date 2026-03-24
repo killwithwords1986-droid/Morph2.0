@@ -47,22 +47,49 @@ class StatusCheckCreate(BaseModel):
 class RestyleRequest(BaseModel):
     imageBase64: str
     stylePrompt: str
+    gender: str = "both"  # male, female, or both
 
 class RestyleResponse(BaseModel):
     image: Optional[str] = None
     description: Optional[str] = None
     error: Optional[str] = None
+    id: Optional[str] = None
 
-class Generation(BaseModel):
+class GalleryItem(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    original_image: str
+    generated_image: str
     style_prompt: str
+    gender: str = "both"
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    status: str = "completed"
 
-# Prompt template for restyling
-def get_restyle_prompt(style_prompt: str) -> str:
-    return f"""Using this person's likeness (face and general appearance), generate a new photorealistic image of them styled as follows: {style_prompt}. You may change the pose, outfit, accessories, hairstyle, setting, and camera angle as needed to match the description. Make it look like high fashion editorial photography with professional lighting. The result MUST be a generated image."""
+class GalleryItemCreate(BaseModel):
+    original_image: str
+    generated_image: str
+    style_prompt: str
+    gender: str = "both"
+
+class GalleryItemResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    original_image: str
+    generated_image: str
+    style_prompt: str
+    gender: str
+    created_at: str
+
+# Prompt template for restyling with gender
+def get_restyle_prompt(style_prompt: str, gender: str) -> str:
+    gender_text = ""
+    if gender == "male":
+        gender_text = "This is a male subject. Use masculine versions of all clothing and styling. "
+    elif gender == "female":
+        gender_text = "This is a female subject. Use feminine versions of all clothing and styling. "
+    else:
+        gender_text = "Style appropriately for the subject's apparent gender. "
+    
+    return f"""{gender_text}Using this person's likeness (face and general appearance), generate a new photorealistic image of them styled as follows: {style_prompt}. You may change the pose, outfit, accessories, hairstyle, setting, and camera angle as needed to match the description. Make it look like high fashion editorial photography with professional lighting. The result MUST be a generated image."""
 
 @api_router.get("/")
 async def root():
@@ -91,6 +118,7 @@ async def restyle_image(request: RestyleRequest):
     try:
         image_base64 = request.imageBase64
         style_prompt = request.stylePrompt
+        gender = request.gender
         
         if not image_base64 or not style_prompt:
             return RestyleResponse(error="Missing imageBase64 or stylePrompt")
@@ -100,11 +128,10 @@ async def restyle_image(request: RestyleRequest):
         if not api_key:
             return RestyleResponse(error="EMERGENT_LLM_KEY is not configured.")
         
-        logger.info(f"Starting restyle with prompt: {style_prompt[:50]}...")
+        logger.info(f"Starting restyle with prompt: {style_prompt[:50]}... gender: {gender}")
         
         # Extract base64 data if it's a data URL
         if image_base64.startswith("data:"):
-            # Extract the base64 part after the comma
             base64_data = image_base64.split(",", 1)[1] if "," in image_base64 else image_base64
         else:
             base64_data = image_base64
@@ -121,7 +148,7 @@ async def restyle_image(request: RestyleRequest):
         chat.with_model("gemini", "gemini-3-pro-image-preview").with_params(modalities=["image", "text"])
         
         # Create the message with the image and style prompt
-        restyle_prompt = get_restyle_prompt(style_prompt)
+        restyle_prompt = get_restyle_prompt(style_prompt, gender)
         msg = UserMessage(
             text=restyle_prompt,
             file_contents=[ImageContent(base64_data)]
@@ -132,24 +159,16 @@ async def restyle_image(request: RestyleRequest):
         
         logger.info(f"Got response - text length: {len(text) if text else 0}, images: {len(images) if images else 0}")
         
+        generation_id = str(uuid.uuid4())
+        
         if images and len(images) > 0:
-            # Get the first generated image
             img = images[0]
             image_data = img.get('data', '')
             mime_type = img.get('mime_type', 'image/png')
-            
-            # Create data URL from base64
             generated_image = f"data:{mime_type};base64,{image_data}"
             
             logger.info("Successfully generated restyled image")
-            
-            # Save generation to database
-            gen = Generation(style_prompt=style_prompt)
-            gen_doc = gen.model_dump()
-            gen_doc['created_at'] = gen_doc['created_at'].isoformat()
-            await db.generations.insert_one(gen_doc)
-            
-            return RestyleResponse(image=generated_image, description=text)
+            return RestyleResponse(image=generated_image, description=text, id=generation_id)
         
         # Check if text response contains embedded image
         if text and "data:image" in text:
@@ -157,7 +176,7 @@ async def restyle_image(request: RestyleRequest):
             match = re.search(r'(data:image\/[^;]+;base64,[A-Za-z0-9+/=]+)', text)
             if match:
                 logger.info("Extracted inline image from text response")
-                return RestyleResponse(image=match.group(1), description=text)
+                return RestyleResponse(image=match.group(1), description=text, id=generation_id)
         
         logger.warning("No image generated in response")
         return RestyleResponse(error="No image was generated. Please try again with a different style.")
@@ -166,14 +185,48 @@ async def restyle_image(request: RestyleRequest):
         logger.error(f"Restyle error: {str(e)}")
         return RestyleResponse(error=str(e))
 
-@api_router.get("/generations", response_model=List[Generation])
-async def get_generations():
-    """Get recent generations"""
-    generations = await db.generations.find({}, {"_id": 0}).sort("created_at", -1).to_list(50)
-    for gen in generations:
-        if isinstance(gen['created_at'], str):
-            gen['created_at'] = datetime.fromisoformat(gen['created_at'])
-    return generations
+# Gallery endpoints
+@api_router.post("/gallery", response_model=GalleryItemResponse)
+async def save_to_gallery(item: GalleryItemCreate):
+    """Save a generated image to the gallery"""
+    try:
+        gallery_item = GalleryItem(
+            original_image=item.original_image,
+            generated_image=item.generated_image,
+            style_prompt=item.style_prompt,
+            gender=item.gender
+        )
+        
+        doc = gallery_item.model_dump()
+        doc['created_at'] = doc['created_at'].isoformat()
+        
+        await db.gallery.insert_one(doc)
+        
+        return GalleryItemResponse(
+            id=gallery_item.id,
+            original_image=gallery_item.original_image,
+            generated_image=gallery_item.generated_image,
+            style_prompt=gallery_item.style_prompt,
+            gender=gallery_item.gender,
+            created_at=doc['created_at']
+        )
+    except Exception as e:
+        logger.error(f"Gallery save error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/gallery", response_model=List[GalleryItemResponse])
+async def get_gallery():
+    """Get all gallery items"""
+    items = await db.gallery.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return items
+
+@api_router.delete("/gallery/{item_id}")
+async def delete_gallery_item(item_id: str):
+    """Delete a gallery item"""
+    result = await db.gallery.delete_one({"id": item_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Item not found")
+    return {"message": "Deleted successfully"}
 
 # Include the router in the main app
 app.include_router(api_router)

@@ -1,8 +1,8 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import "@/App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import axios from "axios";
-import { Sparkles, Upload, X, ChevronDown, Camera, Download, Share2, Plus, Trash2, Scissors } from 'lucide-react';
+import { Sparkles, Upload, X, ChevronDown, Camera, Download, Share2, Plus, Trash2, Scissors, Image, User, Users } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -284,7 +284,7 @@ const styleCategories = [
 ];
 
 // ============================================
-// HAIR STYLE CATEGORIES - 10 categories x 20 presets = 200+ hair styles
+// HAIR STYLE CATEGORIES - 10 categories x 20 presets = 200 hair styles
 // ============================================
 const hairCategories = [
   {
@@ -567,8 +567,39 @@ const Toast = ({ message, type, onClose }) => (
         <p className="font-medium text-sm">{type === 'error' ? 'Error' : 'Success'}</p>
         <p className="text-sm text-gray-400">{message}</p>
       </div>
-      <button onClick={onClose} className="text-gray-400 hover:text-white">
-        <X size={16} />
+      <button onClick={onClose} className="text-gray-400 hover:text-white"><X size={16} /></button>
+    </div>
+  </div>
+);
+
+// Gender Selector component
+const GenderSelector = ({ gender, setGender }) => (
+  <div className="gender-selector" data-testid="gender-selector">
+    <span className="text-sm text-gray-400 mr-3">Style for:</span>
+    <div className="gender-buttons">
+      <button 
+        className={`gender-btn ${gender === 'male' ? 'active' : ''}`}
+        onClick={() => setGender('male')}
+        data-testid="gender-male"
+      >
+        <User size={16} />
+        Male
+      </button>
+      <button 
+        className={`gender-btn ${gender === 'female' ? 'active' : ''}`}
+        onClick={() => setGender('female')}
+        data-testid="gender-female"
+      >
+        <User size={16} />
+        Female
+      </button>
+      <button 
+        className={`gender-btn ${gender === 'both' ? 'active' : ''}`}
+        onClick={() => setGender('both')}
+        data-testid="gender-both"
+      >
+        <Users size={16} />
+        Auto
       </button>
     </div>
   </div>
@@ -582,8 +613,7 @@ const ImageUpload = ({ onImageSelect, currentImage, onClear }) => {
 
   const handleFile = useCallback((file) => {
     if (!file.type.startsWith("image/")) return;
-    
-    const img = new Image();
+    const img = new window.Image();
     img.onload = () => {
       const MAX = 768;
       let w = img.width;
@@ -620,9 +650,7 @@ const ImageUpload = ({ onImageSelect, currentImage, onClear }) => {
     return (
       <div className="image-container" data-testid="uploaded-image-container">
         <img src={currentImage} alt="Your uploaded photo" />
-        <button onClick={onClear} className="clear-button" data-testid="clear-image-btn">
-          <X size={16} />
-        </button>
+        <button onClick={onClear} className="clear-button" data-testid="clear-image-btn"><X size={16} /></button>
       </div>
     );
   }
@@ -640,32 +668,14 @@ const ImageUpload = ({ onImageSelect, currentImage, onClear }) => {
         <p className="text-white font-medium mb-1">Drop your photo here</p>
         <p className="text-sm text-gray-400">or click to browse</p>
         <p className="text-xs text-gray-500 mt-2">Full-body photos work best</p>
-        <input 
-          ref={fileInputRef}
-          type="file" 
-          accept="image/*" 
-          onChange={handleChange} 
-          className="hidden" 
-          data-testid="image-input" 
-        />
+        <input ref={fileInputRef} type="file" accept="image/*" onChange={handleChange} className="hidden" data-testid="image-input" />
       </label>
       <div className="camera-button-wrapper">
-        <button 
-          onClick={() => cameraInputRef.current?.click()} 
-          className="camera-btn"
-          data-testid="camera-capture-btn"
-        >
+        <button onClick={() => cameraInputRef.current?.click()} className="camera-btn" data-testid="camera-capture-btn">
           <Camera size={20} />
           <span>Take Photo</span>
         </button>
-        <input
-          ref={cameraInputRef}
-          type="file"
-          accept="image/*"
-          capture="user"
-          onChange={handleChange}
-          className="hidden"
-        />
+        <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={handleChange} className="hidden" />
       </div>
     </div>
   );
@@ -674,23 +684,17 @@ const ImageUpload = ({ onImageSelect, currentImage, onClear }) => {
 // Selected Styles Chips display
 const SelectedStylesChips = ({ selectedStyles, onRemove, onClear }) => {
   if (selectedStyles.length === 0) return null;
-  
   return (
     <div className="selected-styles-container" data-testid="selected-styles-chips">
       <div className="selected-styles-header">
         <span className="text-sm font-medium text-gray-300">Selected Styles ({selectedStyles.length})</span>
-        <button onClick={onClear} className="clear-all-btn" data-testid="clear-all-styles">
-          <Trash2 size={14} />
-          Clear All
-        </button>
+        <button onClick={onClear} className="clear-all-btn" data-testid="clear-all-styles"><Trash2 size={14} />Clear All</button>
       </div>
       <div className="selected-styles-chips">
         {selectedStyles.map((style, index) => (
           <div key={`${style.id}-${index}`} className="style-chip" data-testid={`chip-${style.id}`}>
             <span>{style.label}</span>
-            <button onClick={() => onRemove(index)} className="chip-remove">
-              <X size={12} />
-            </button>
+            <button onClick={() => onRemove(index)} className="chip-remove"><X size={12} /></button>
           </div>
         ))}
       </div>
@@ -701,19 +705,9 @@ const SelectedStylesChips = ({ selectedStyles, onRemove, onClear }) => {
 // StyleSelector component with multi-select
 const StyleSelector = ({ selectedStyles, onAddStyle, customPrompt, onCustomPromptChange, categories, title, icon }) => {
   const [expandedCategory, setExpandedCategory] = useState(null);
-
-  const handlePresetClick = (preset) => {
-    onAddStyle(preset);
-  };
-
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 mb-2">
-        {icon}
-        <span className="text-sm text-gray-400">{title}</span>
-      </div>
-      
-      {/* Category Accordion */}
+      <div className="flex items-center gap-2 mb-2">{icon}<span className="text-sm text-gray-400">{title}</span></div>
       <div className="space-y-2">
         {categories.map((category) => (
           <div key={category.id} className="rounded-lg border border-[hsl(var(--border))] overflow-hidden">
@@ -729,7 +723,6 @@ const StyleSelector = ({ selectedStyles, onAddStyle, customPrompt, onCustomPromp
               </div>
               <ChevronDown className={`chevron-icon ${expandedCategory === category.id ? 'open' : ''}`} size={16} />
             </button>
-
             {expandedCategory === category.id && (
               <div className="p-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-[300px] overflow-y-auto">
                 {category.presets.map((preset) => {
@@ -737,14 +730,11 @@ const StyleSelector = ({ selectedStyles, onAddStyle, customPrompt, onCustomPromp
                   return (
                     <button
                       key={preset.id}
-                      onClick={() => handlePresetClick(preset)}
+                      onClick={() => onAddStyle(preset)}
                       className={`preset-button ${isSelected ? 'selected' : ''}`}
                       data-testid={`preset-${preset.id}`}
                     >
-                      <span className="flex items-center gap-1">
-                        {isSelected && <span className="text-xs">✓</span>}
-                        {preset.label}
-                      </span>
+                      <span className="flex items-center gap-1">{isSelected && <span className="text-xs">✓</span>}{preset.label}</span>
                       {!isSelected && <Plus size={12} className="opacity-50" />}
                     </button>
                   );
@@ -754,13 +744,11 @@ const StyleSelector = ({ selectedStyles, onAddStyle, customPrompt, onCustomPromp
           </div>
         ))}
       </div>
-
-      {/* Custom prompt */}
       <div className="relative">
         <textarea
           value={customPrompt}
           onChange={(e) => onCustomPromptChange(e.target.value)}
-          placeholder="Or describe your own style... e.g., 'White linen suit with gold accessories on a beach'"
+          placeholder="Or describe your own style..."
           className="style-textarea"
           data-testid="custom-prompt-input"
         />
@@ -769,46 +757,46 @@ const StyleSelector = ({ selectedStyles, onAddStyle, customPrompt, onCustomPromp
   );
 };
 
-// Before/After Comparison component
-const BeforeAfterComparison = ({ beforeImage, afterImage }) => {
-  const [sliderPosition, setSliderPosition] = useState(50);
-  const containerRef = useRef(null);
+// Gallery component
+const Gallery = ({ items, onDelete, onSelect, showToast }) => {
+  if (items.length === 0) {
+    return (
+      <div className="gallery-empty">
+        <Image size={48} className="text-gray-600 mb-4" />
+        <p className="text-gray-400">Your gallery is empty</p>
+        <p className="text-sm text-gray-500">Create some styles to see them here!</p>
+      </div>
+    );
+  }
 
-  const handleMove = (clientX) => {
-    if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = clientX - rect.left;
-    const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
-    setSliderPosition(percentage);
+  const handleDownload = (item) => {
+    const link = document.createElement('a');
+    link.href = item.generated_image;
+    link.download = `morph-${item.id.slice(0, 8)}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast("Image downloaded!", "success");
   };
 
   return (
-    <div 
-      ref={containerRef}
-      className="comparison-container"
-      onMouseMove={(e) => e.buttons === 1 && handleMove(e.clientX)}
-      onTouchMove={(e) => handleMove(e.touches[0].clientX)}
-      data-testid="before-after-comparison"
-    >
-      <div className="comparison-before" style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}>
-        <img src={beforeImage} alt="Before" />
-        <span className="comparison-label before-label">Before</span>
-      </div>
-      <div className="comparison-after">
-        <img src={afterImage} alt="After" />
-        <span className="comparison-label after-label">After</span>
-      </div>
-      <div 
-        className="comparison-slider"
-        style={{ left: `${sliderPosition}%` }}
-        onMouseDown={() => {}}
-      >
-        <div className="slider-line" />
-        <div className="slider-handle">
-          <ChevronDown className="rotate-90" size={16} />
-          <ChevronDown className="-rotate-90" size={16} />
+    <div className="gallery-grid">
+      {items.map((item) => (
+        <div key={item.id} className="gallery-item" data-testid={`gallery-item-${item.id}`}>
+          <img src={item.generated_image} alt={item.style_prompt} onClick={() => onSelect(item)} />
+          <div className="gallery-item-overlay">
+            <p className="gallery-item-prompt">{item.style_prompt.slice(0, 50)}...</p>
+            <div className="gallery-item-actions">
+              <button onClick={() => handleDownload(item)} className="gallery-action-btn" title="Download">
+                <Download size={14} />
+              </button>
+              <button onClick={() => onDelete(item.id)} className="gallery-action-btn delete" title="Delete">
+                <Trash2 size={14} />
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      ))}
     </div>
   );
 };
@@ -823,12 +811,30 @@ const Index = () => {
   const [resultImage, setResultImage] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [toast, setToast] = useState(null);
-  const [activeTab, setActiveTab] = useState('body'); // 'body' or 'hair'
+  const [activeTab, setActiveTab] = useState('body');
   const [showComparison, setShowComparison] = useState(false);
+  const [gender, setGender] = useState('both');
+  const [currentView, setCurrentView] = useState('create'); // 'create' or 'gallery'
+  const [galleryItems, setGalleryItems] = useState([]);
+  const [isSaving, setIsSaving] = useState(false);
 
   const showToast = (message, type = 'info') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 5000);
+  };
+
+  // Load gallery on mount
+  useEffect(() => {
+    loadGallery();
+  }, []);
+
+  const loadGallery = async () => {
+    try {
+      const response = await axios.get(`${API}/gallery`);
+      setGalleryItems(response.data);
+    } catch (err) {
+      console.error("Failed to load gallery:", err);
+    }
   };
 
   const handleAddBodyStyle = (style) => {
@@ -851,30 +857,12 @@ const Index = () => {
     setSelectedHairStyles(selectedHairStyles.filter((_, i) => i !== index));
   };
 
-  // Build combined prompt from all selections
   const buildPrompt = () => {
     const parts = [];
-    
-    // Add body style prompts
-    selectedBodyStyles.forEach(style => {
-      parts.push(style.prompt);
-    });
-    
-    // Add custom body prompt
-    if (customBodyPrompt.trim()) {
-      parts.push(customBodyPrompt.trim());
-    }
-    
-    // Add hair style prompts
-    selectedHairStyles.forEach(style => {
-      parts.push(style.prompt);
-    });
-    
-    // Add custom hair prompt
-    if (customHairPrompt.trim()) {
-      parts.push(customHairPrompt.trim());
-    }
-    
+    selectedBodyStyles.forEach(style => parts.push(style.prompt));
+    if (customBodyPrompt.trim()) parts.push(customBodyPrompt.trim());
+    selectedHairStyles.forEach(style => parts.push(style.prompt));
+    if (customHairPrompt.trim()) parts.push(customHairPrompt.trim());
     return parts.join(', ');
   };
 
@@ -886,7 +874,6 @@ const Index = () => {
       showToast("Please upload a photo and choose at least one style.", "error");
       return;
     }
-
     setIsGenerating(true);
     setResultImage(null);
     setShowComparison(false);
@@ -895,15 +882,13 @@ const Index = () => {
       const response = await axios.post(`${API}/restyle`, {
         imageBase64: uploadedImage,
         stylePrompt: activePrompt,
+        gender: gender,
       });
-
       const data = response.data;
-
       if (data.error) {
         showToast(data.error, "error");
         return;
       }
-
       if (data.image) {
         setResultImage(data.image);
         showToast("Your new look is ready!", "success");
@@ -912,6 +897,25 @@ const Index = () => {
       showToast(err.message || "Something went wrong", "error");
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleSaveToGallery = async () => {
+    if (!resultImage || !uploadedImage) return;
+    setIsSaving(true);
+    try {
+      await axios.post(`${API}/gallery`, {
+        original_image: uploadedImage,
+        generated_image: resultImage,
+        style_prompt: activePrompt,
+        gender: gender,
+      });
+      showToast("Saved to your gallery!", "success");
+      loadGallery();
+    } catch (err) {
+      showToast("Failed to save", "error");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -928,22 +932,48 @@ const Index = () => {
 
   const handleShare = async () => {
     if (!resultImage) return;
-    
     try {
-      if (navigator.share) {
-        const blob = await fetch(resultImage).then(r => r.blob());
-        const file = new File([blob], 'morph-style.png', { type: 'image/png' });
+      // Convert base64 to blob
+      const base64Data = resultImage.split(',')[1];
+      const byteCharacters = atob(base64Data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'image/png' });
+      const file = new File([blob], 'morph-style.png', { type: 'image/png' });
+
+      if (navigator.share && navigator.canShare({ files: [file] })) {
         await navigator.share({
           title: 'My MORPH Style',
-          text: 'Check out my AI-generated style!',
+          text: 'Check out my AI-generated style from MORPH!',
           files: [file]
         });
+        showToast("Shared successfully!", "success");
       } else {
-        await navigator.clipboard.writeText(window.location.href);
-        showToast("Link copied to clipboard!", "success");
+        // Fallback: copy image to clipboard or show message
+        try {
+          await navigator.clipboard.write([
+            new ClipboardItem({ 'image/png': blob })
+          ]);
+          showToast("Image copied to clipboard!", "success");
+        } catch {
+          showToast("Use the download button to save and share", "info");
+        }
       }
     } catch (err) {
-      showToast("Sharing failed", "error");
+      showToast("Download the image to share it", "info");
+    }
+  };
+
+  const handleDeleteGalleryItem = async (id) => {
+    try {
+      await axios.delete(`${API}/gallery/${id}`);
+      showToast("Deleted from gallery", "success");
+      loadGallery();
+    } catch (err) {
+      showToast("Failed to delete", "error");
     }
   };
 
@@ -953,164 +983,178 @@ const Index = () => {
     <div className="gradient-dark">
       {/* Header */}
       <header className="border-b border-[hsl(var(--border))] glass">
-        <div className="container py-6 flex items-center justify-between">
+        <div className="container py-4 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl md:text-4xl font-display font-bold tracking-tight">
+            <h1 className="text-2xl md:text-3xl font-display font-bold tracking-tight">
               <span className="text-[hsl(var(--primary))]">MORPH</span>
             </h1>
-            <p className="text-sm text-gray-400 mt-1">AI Style Experience</p>
+            <p className="text-xs text-gray-400">AI Style Experience</p>
           </div>
-          <Sparkles className="w-6 h-6 text-[hsl(var(--primary))]" />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentView('create')}
+              className={`nav-btn ${currentView === 'create' ? 'active' : ''}`}
+              data-testid="nav-create"
+            >
+              <Sparkles size={16} />
+              Create
+            </button>
+            <button
+              onClick={() => setCurrentView('gallery')}
+              className={`nav-btn ${currentView === 'gallery' ? 'active' : ''}`}
+              data-testid="nav-gallery"
+            >
+              <Image size={16} />
+              Gallery
+              {galleryItems.length > 0 && <span className="nav-badge">{galleryItems.length}</span>}
+            </button>
+          </div>
         </div>
       </header>
 
-      {/* Main content */}
-      <main className="container py-8 md:py-12 space-y-10">
-        {/* Step 1: Upload */}
-        <section className="space-y-4 animate-fade-in" data-testid="upload-section">
-          <div className="flex items-center gap-3">
-            <span className="step-indicator">1</span>
-            <h2 className="text-xl font-display font-semibold">Your Photo</h2>
-          </div>
-          <ImageUpload
-            onImageSelect={setUploadedImage}
-            currentImage={uploadedImage}
-            onClear={() => { setUploadedImage(null); setResultImage(null); setShowComparison(false); }}
-          />
-        </section>
-
-        {/* Step 2: Style Selection with Tabs */}
-        <section className="space-y-4 animate-fade-in" style={{ animationDelay: "0.1s" }} data-testid="style-section">
-          <div className="flex items-center gap-3">
-            <span className="step-indicator">2</span>
-            <h2 className="text-xl font-display font-semibold">Choose Your Vibe</h2>
-          </div>
-          
-          {/* Selected styles chips */}
-          <SelectedStylesChips 
-            selectedStyles={allSelectedStyles}
-            onRemove={(index) => {
-              if (index < selectedBodyStyles.length) {
-                handleRemoveBodyStyle(index);
-              } else {
-                handleRemoveHairStyle(index - selectedBodyStyles.length);
-              }
+      {currentView === 'gallery' ? (
+        <main className="container py-8">
+          <h2 className="text-xl font-display font-semibold mb-6">Your Gallery</h2>
+          <Gallery 
+            items={galleryItems} 
+            onDelete={handleDeleteGalleryItem}
+            onSelect={(item) => {
+              setResultImage(item.generated_image);
+              setUploadedImage(item.original_image);
+              setCurrentView('create');
             }}
-            onClear={() => {
-              setSelectedBodyStyles([]);
-              setSelectedHairStyles([]);
-            }}
+            showToast={showToast}
           />
-          
-          {/* Tab buttons */}
-          <div className="tab-buttons" data-testid="style-tabs">
-            <button 
-              className={`tab-btn ${activeTab === 'body' ? 'active' : ''}`}
-              onClick={() => setActiveTab('body')}
-              data-testid="tab-body"
-            >
-              <Sparkles size={16} />
-              Full Body Styles
-              <span className="tab-count">{styleCategories.reduce((acc, cat) => acc + cat.presets.length, 0)}</span>
-            </button>
-            <button 
-              className={`tab-btn ${activeTab === 'hair' ? 'active' : ''}`}
-              onClick={() => setActiveTab('hair')}
-              data-testid="tab-hair"
-            >
-              <Scissors size={16} />
-              Hair Styles & Colors
-              <span className="tab-count">{hairCategories.reduce((acc, cat) => acc + cat.presets.length, 0)}</span>
-            </button>
-          </div>
-
-          {/* Tab content */}
-          {activeTab === 'body' ? (
-            <StyleSelector
-              selectedStyles={selectedBodyStyles}
-              onAddStyle={handleAddBodyStyle}
-              customPrompt={customBodyPrompt}
-              onCustomPromptChange={setCustomBodyPrompt}
-              categories={styleCategories}
-              title="10 Categories • 200 Styles"
-              icon={<Sparkles size={16} className="text-[hsl(var(--primary))]" />}
-            />
-          ) : (
-            <StyleSelector
-              selectedStyles={selectedHairStyles}
-              onAddStyle={handleAddHairStyle}
-              customPrompt={customHairPrompt}
-              onCustomPromptChange={setCustomHairPrompt}
-              categories={hairCategories}
-              title="10 Categories • 200 Hair Styles"
-              icon={<Scissors size={16} className="text-[hsl(var(--primary))]" />}
-            />
-          )}
-        </section>
-
-        {/* Generate button */}
-        <div className="flex justify-center gap-4 animate-fade-in" style={{ animationDelay: "0.2s" }}>
-          <button
-            onClick={handleGenerate}
-            disabled={!uploadedImage || !hasSelection || isGenerating}
-            className="btn-gold min-w-[220px]"
-            data-testid="generate-btn"
-          >
-            {isGenerating ? (
-              <>
-                <span className="inline-block w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-                Generating...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-5 h-5" />
-                Generate Look
-              </>
-            )}
-          </button>
-        </div>
-
-        {/* Result */}
-        {resultImage && (
-          <section className="space-y-4 animate-fade-in" data-testid="result-section">
-            <div className="flex items-center justify-between">
+        </main>
+      ) : (
+        <main className="container py-6 md:py-10 space-y-8">
+          {/* Step 1: Upload + Gender */}
+          <section className="space-y-4 animate-fade-in" data-testid="upload-section">
+            <div className="flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center gap-3">
-                <span className="step-indicator">✓</span>
-                <h2 className="text-xl font-display font-semibold">Your New Look</h2>
+                <span className="step-indicator">1</span>
+                <h2 className="text-lg font-display font-semibold">Your Photo</h2>
               </div>
-              <div className="flex items-center gap-2">
-                {uploadedImage && (
-                  <button 
-                    onClick={() => setShowComparison(!showComparison)}
-                    className="action-btn"
-                    data-testid="toggle-comparison"
-                  >
-                    {showComparison ? 'Hide' : 'Compare'}
-                  </button>
-                )}
-                <button onClick={handleDownload} className="action-btn" data-testid="download-btn">
-                  <Download size={16} />
-                  Save
-                </button>
-                <button onClick={handleShare} className="action-btn" data-testid="share-btn">
-                  <Share2 size={16} />
-                  Share
-                </button>
-              </div>
+              <GenderSelector gender={gender} setGender={setGender} />
+            </div>
+            <ImageUpload
+              onImageSelect={setUploadedImage}
+              currentImage={uploadedImage}
+              onClear={() => { setUploadedImage(null); setResultImage(null); setShowComparison(false); }}
+            />
+          </section>
+
+          {/* Step 2: Style Selection */}
+          <section className="space-y-4 animate-fade-in" style={{ animationDelay: "0.1s" }} data-testid="style-section">
+            <div className="flex items-center gap-3">
+              <span className="step-indicator">2</span>
+              <h2 className="text-lg font-display font-semibold">Choose Your Vibe</h2>
             </div>
             
-            {showComparison && uploadedImage ? (
-              <BeforeAfterComparison beforeImage={uploadedImage} afterImage={resultImage} />
+            <SelectedStylesChips 
+              selectedStyles={allSelectedStyles}
+              onRemove={(index) => {
+                if (index < selectedBodyStyles.length) handleRemoveBodyStyle(index);
+                else handleRemoveHairStyle(index - selectedBodyStyles.length);
+              }}
+              onClear={() => { setSelectedBodyStyles([]); setSelectedHairStyles([]); }}
+            />
+            
+            <div className="tab-buttons" data-testid="style-tabs">
+              <button className={`tab-btn ${activeTab === 'body' ? 'active' : ''}`} onClick={() => setActiveTab('body')} data-testid="tab-body">
+                <Sparkles size={16} />Body Styles<span className="tab-count">200</span>
+              </button>
+              <button className={`tab-btn ${activeTab === 'hair' ? 'active' : ''}`} onClick={() => setActiveTab('hair')} data-testid="tab-hair">
+                <Scissors size={16} />Hair Styles<span className="tab-count">200</span>
+              </button>
+            </div>
+
+            {activeTab === 'body' ? (
+              <StyleSelector
+                selectedStyles={selectedBodyStyles}
+                onAddStyle={handleAddBodyStyle}
+                customPrompt={customBodyPrompt}
+                onCustomPromptChange={setCustomBodyPrompt}
+                categories={styleCategories}
+                title="10 Categories • 200 Styles"
+                icon={<Sparkles size={16} className="text-[hsl(var(--primary))]" />}
+              />
             ) : (
-              <div className="result-image">
-                <img src={resultImage} alt="AI generated restyle" data-testid="result-image" />
-              </div>
+              <StyleSelector
+                selectedStyles={selectedHairStyles}
+                onAddStyle={handleAddHairStyle}
+                customPrompt={customHairPrompt}
+                onCustomPromptChange={setCustomHairPrompt}
+                categories={hairCategories}
+                title="10 Categories • 200 Hair Styles"
+                icon={<Scissors size={16} className="text-[hsl(var(--primary))]" />}
+              />
             )}
           </section>
-        )}
-      </main>
 
-      {/* Toast */}
+          {/* Generate button */}
+          <div className="flex justify-center animate-fade-in" style={{ animationDelay: "0.2s" }}>
+            <button
+              onClick={handleGenerate}
+              disabled={!uploadedImage || !hasSelection || isGenerating}
+              className="btn-gold min-w-[200px]"
+              data-testid="generate-btn"
+            >
+              {isGenerating ? (
+                <><span className="inline-block w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />Generating...</>
+              ) : (
+                <><Sparkles className="w-5 h-5" />Generate Look</>
+              )}
+            </button>
+          </div>
+
+          {/* Result */}
+          {resultImage && (
+            <section className="space-y-4 animate-fade-in" data-testid="result-section">
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <div className="flex items-center gap-3">
+                  <span className="step-indicator">✓</span>
+                  <h2 className="text-lg font-display font-semibold">Your New Look</h2>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {uploadedImage && (
+                    <button onClick={() => setShowComparison(!showComparison)} className="action-btn" data-testid="toggle-comparison">
+                      {showComparison ? 'Hide Compare' : 'Compare'}
+                    </button>
+                  )}
+                  <button onClick={handleSaveToGallery} disabled={isSaving} className="action-btn save" data-testid="save-gallery-btn">
+                    <Image size={16} />{isSaving ? 'Saving...' : 'Save to Gallery'}
+                  </button>
+                  <button onClick={handleDownload} className="action-btn" data-testid="download-btn">
+                    <Download size={16} />Download
+                  </button>
+                  <button onClick={handleShare} className="action-btn" data-testid="share-btn">
+                    <Share2 size={16} />Share
+                  </button>
+                </div>
+              </div>
+              
+              {showComparison && uploadedImage ? (
+                <div className="comparison-view">
+                  <div className="comparison-side">
+                    <span className="comparison-label">Before</span>
+                    <img src={uploadedImage} alt="Before" />
+                  </div>
+                  <div className="comparison-side">
+                    <span className="comparison-label">After</span>
+                    <img src={resultImage} alt="After" />
+                  </div>
+                </div>
+              ) : (
+                <div className="result-image">
+                  <img src={resultImage} alt="AI generated restyle" data-testid="result-image" />
+                </div>
+              )}
+            </section>
+          )}
+        </main>
+      )}
+
       {toast && (
         <div className="toast-container">
           <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
