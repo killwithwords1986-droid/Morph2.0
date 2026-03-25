@@ -647,8 +647,11 @@ const GenderSelector = ({ gender, setGender }) => (
 // ImageUpload component with Camera support
 const ImageUpload = ({ onImageSelect, currentImage, onClear }) => {
   const [isDragging, setIsDragging] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
+  const [cameraError, setCameraError] = useState(null);
   const fileInputRef = useRef(null);
-  const cameraInputRef = useRef(null);
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
 
   const handleFile = useCallback((file) => {
     if (!file.type.startsWith("image/")) return;
@@ -685,11 +688,73 @@ const ImageUpload = ({ onImageSelect, currentImage, onClear }) => {
     if (file) handleFile(file);
   };
 
+  const startCamera = async () => {
+    setCameraError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } } 
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+      setShowCamera(true);
+    } catch (err) {
+      setCameraError("Camera access denied. Please allow camera access or use 'Browse' to upload a photo.");
+      console.error("Camera error:", err);
+    }
+  };
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    setShowCamera(false);
+  };
+
+  const capturePhoto = () => {
+    if (!videoRef.current) return;
+    const video = videoRef.current;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+    stopCamera();
+    onImageSelect(dataUrl);
+  };
+
+  // Cleanup camera on unmount
+  useEffect(() => {
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
+
   if (currentImage) {
     return (
       <div className="image-container" data-testid="uploaded-image-container">
         <img src={currentImage} alt="Your uploaded photo" />
         <button onClick={onClear} className="clear-button" data-testid="clear-image-btn"><X size={16} /></button>
+      </div>
+    );
+  }
+
+  if (showCamera) {
+    return (
+      <div className="camera-view" data-testid="camera-view">
+        <video ref={videoRef} autoPlay playsInline className="camera-video" />
+        <div className="camera-controls">
+          <button onClick={stopCamera} className="camera-cancel-btn">Cancel</button>
+          <button onClick={capturePhoto} className="camera-capture-btn" data-testid="capture-btn">
+            <div className="capture-circle" />
+          </button>
+          <div style={{width: '60px'}} />
+        </div>
       </div>
     );
   }
@@ -710,20 +775,14 @@ const ImageUpload = ({ onImageSelect, currentImage, onClear }) => {
         <input ref={fileInputRef} type="file" accept="image/*" onChange={handleChange} className="hidden" data-testid="image-input" />
       </label>
       <div className="camera-button-wrapper">
-        <button onClick={() => cameraInputRef.current?.click()} className="camera-btn" data-testid="camera-capture-btn">
+        <button onClick={startCamera} className="camera-btn" data-testid="camera-capture-btn">
           <Camera size={20} />
           <span>Take Photo</span>
         </button>
-        <input 
-          ref={cameraInputRef} 
-          type="file" 
-          accept="image/*" 
-          capture="user"
-          onChange={handleChange} 
-          className="hidden" 
-          data-testid="camera-input"
-        />
       </div>
+      {cameraError && (
+        <p className="camera-error">{cameraError}</p>
+      )}
     </div>
   );
 };
