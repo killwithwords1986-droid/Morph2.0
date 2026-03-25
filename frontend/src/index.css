@@ -836,6 +836,205 @@ body {
   color: hsl(var(--primary-foreground));
 }
 
+.action-btn.favorite-btn {
+  border-color: hsl(var(--primary));
+  color: hsl(var(--primary));
+}
+
+.action-btn.favorite-btn:hover {
+  background: hsla(var(--primary), 0.15);
+}
+
+/* Favorites list */
+.favorites-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.favorite-card {
+  background: hsl(var(--secondary));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  padding: 1rem;
+  transition: all 0.2s ease;
+}
+
+.favorite-card:hover {
+  border-color: hsla(var(--primary), 0.4);
+}
+
+.favorite-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.favorite-name {
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+
+.favorite-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.favorite-tag {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  background: hsla(var(--muted), 0.5);
+  color: hsl(var(--muted-foreground));
+}
+
+.favorite-gender {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  background: hsla(var(--primary), 0.15);
+  color: hsl(var(--primary));
+  text-transform: capitalize;
+}
+
+.favorite-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.favorite-apply-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: var(--radius);
+  background: hsl(var(--primary));
+  border: none;
+  color: hsl(var(--primary-foreground));
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.favorite-apply-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px hsla(45, 100%, 51%, 0.3);
+}
+
+.favorite-delete-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.375rem;
+  border-radius: var(--radius);
+  background: transparent;
+  border: 1px solid hsl(var(--border));
+  color: hsl(var(--muted-foreground));
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.favorite-delete-btn:hover {
+  border-color: hsl(var(--destructive));
+  color: hsl(var(--destructive));
+}
+
+/* Modal styles */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 1rem;
+}
+
+.modal-content {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  max-width: 400px;
+  width: 100%;
+  animation: fade-in 0.2s ease-out;
+}
+
+.modal-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: hsl(var(--foreground));
+}
+
+.modal-input {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: var(--radius);
+  background: hsl(var(--secondary));
+  border: 1px solid hsl(var(--border));
+  color: hsl(var(--foreground));
+  font-size: 0.875rem;
+  margin-bottom: 0.75rem;
+}
+
+.modal-input:focus {
+  outline: none;
+  border-color: hsl(var(--primary));
+}
+
+.modal-preview {
+  margin-bottom: 1rem;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.modal-cancel {
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius);
+  background: transparent;
+  border: 1px solid hsl(var(--border));
+  color: hsl(var(--muted-foreground));
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modal-cancel:hover {
+  background: hsl(var(--secondary));
+}
+
+.modal-save {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius);
+  background: hsl(var(--primary));
+  border: none;
+  color: hsl(var(--primary-foreground));
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modal-save:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.modal-save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Responsive adjustments */
 @media (max-width: 640px) {
   .tab-buttons {

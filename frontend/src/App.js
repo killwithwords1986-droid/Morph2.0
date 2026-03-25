@@ -2,7 +2,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import "@/App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import axios from "axios";
-import { Sparkles, Upload, X, ChevronDown, Camera, Download, Share2, Plus, Trash2, Scissors, Image, User, Users } from 'lucide-react';
+import { Sparkles, Upload, X, ChevronDown, Camera, Download, Share2, Plus, Trash2, Scissors, Image, User, Users, Heart, Star, Bookmark } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -454,26 +454,65 @@ const hairCategories = [
     label: "Hair Colors",
     emoji: "🎨",
     presets: [
-      { id: "hair-platinum", label: "Platinum Blonde", prompt: "with platinum blonde hair, ice queen" },
+      // Blondes
+      { id: "hair-platinum", label: "Platinum Blonde", prompt: "with platinum blonde hair, ice queen white-blonde" },
       { id: "hair-honey", label: "Honey Blonde", prompt: "with warm honey blonde hair, golden tones" },
       { id: "hair-strawberry", label: "Strawberry Blonde", prompt: "with strawberry blonde hair, pink undertones" },
-      { id: "hair-jet-black", label: "Jet Black", prompt: "with jet black hair, dramatic and sleek" },
+      { id: "hair-ash-blonde", label: "Ash Blonde", prompt: "with cool ash blonde hair, silver undertones" },
+      { id: "hair-golden", label: "Golden Blonde", prompt: "with golden blonde hair, sun-kissed warmth" },
+      { id: "hair-dirty-blonde", label: "Dirty Blonde", prompt: "with dirty blonde hair, natural dark blonde" },
+      { id: "hair-champagne", label: "Champagne Blonde", prompt: "with champagne blonde hair, warm beige tones" },
+      { id: "hair-butter", label: "Butter Blonde", prompt: "with butter blonde hair, creamy yellow tones" },
+      // Browns
+      { id: "hair-chocolate", label: "Chocolate Brown", prompt: "with rich chocolate brown hair, glossy" },
+      { id: "hair-caramel", label: "Caramel Brown", prompt: "with caramel brown hair, warm golden-brown" },
+      { id: "hair-ash-brown", label: "Ash Brown", prompt: "with cool ash brown hair, muted tones" },
+      { id: "hair-chestnut", label: "Chestnut Brown", prompt: "with chestnut brown hair, red-brown warmth" },
+      { id: "hair-espresso", label: "Espresso Brown", prompt: "with deep espresso brown hair, almost black" },
+      { id: "hair-mocha", label: "Mocha Brown", prompt: "with mocha brown hair, coffee-colored richness" },
+      { id: "hair-walnut", label: "Walnut Brown", prompt: "with walnut brown hair, medium brown depth" },
+      { id: "hair-bronze", label: "Bronze Brown", prompt: "with bronze brown hair, metallic brown shine" },
+      // Reds
       { id: "hair-auburn", label: "Rich Auburn", prompt: "with rich auburn hair, red-brown warmth" },
       { id: "hair-copper", label: "Copper Red", prompt: "with copper red hair, fiery and bold" },
+      { id: "hair-ginger", label: "Ginger Red", prompt: "with natural ginger red hair, orange-red tones" },
       { id: "hair-burgundy", label: "Burgundy", prompt: "with deep burgundy hair, wine-colored" },
-      { id: "hair-caramel", label: "Caramel Highlights", prompt: "with caramel balayage highlights, sun-kissed" },
-      { id: "hair-ash-brown", label: "Ash Brown", prompt: "with cool ash brown hair, muted tones" },
-      { id: "hair-chocolate", label: "Chocolate Brown", prompt: "with rich chocolate brown hair, glossy" },
+      { id: "hair-cherry", label: "Cherry Red", prompt: "with cherry red hair, vibrant true red" },
+      { id: "hair-mahogany", label: "Mahogany Red", prompt: "with mahogany red hair, deep red-brown" },
+      { id: "hair-fire-red", label: "Fire Engine Red", prompt: "with bright fire engine red hair, vivid scarlet" },
+      { id: "hair-wine", label: "Wine Red", prompt: "with wine red hair, merlot colored" },
+      // Blacks & Grays
+      { id: "hair-jet-black", label: "Jet Black", prompt: "with jet black hair, dramatic and sleek" },
+      { id: "hair-blue-black", label: "Blue Black", prompt: "with blue-black hair, raven with blue sheen" },
       { id: "hair-silver", label: "Silver Gray", prompt: "with silver gray hair, distinguished and chic" },
+      { id: "hair-charcoal", label: "Charcoal Gray", prompt: "with charcoal gray hair, dark slate" },
+      { id: "hair-salt-pepper", label: "Salt & Pepper", prompt: "with salt and pepper hair, natural gray mix" },
+      { id: "hair-white", label: "Pure White", prompt: "with pure white hair, snow white elegance" },
+      // Pastels & Fantasy
       { id: "hair-rose-gold", label: "Rose Gold", prompt: "with rose gold hair, pink metallic tones" },
       { id: "hair-pastel-pink", label: "Pastel Pink", prompt: "with soft pastel pink hair, cotton candy" },
+      { id: "hair-hot-pink", label: "Hot Pink", prompt: "with hot pink hair, bright magenta" },
       { id: "hair-lavender", label: "Lavender", prompt: "with lavender purple hair, dreamy and soft" },
+      { id: "hair-violet", label: "Violet Purple", prompt: "with violet purple hair, deep purple" },
       { id: "hair-electric-blue", label: "Electric Blue", prompt: "with electric blue hair, vivid and bold" },
+      { id: "hair-teal", label: "Teal Blue", prompt: "with teal blue-green hair, ocean colored" },
+      { id: "hair-mint", label: "Mint Green", prompt: "with mint green hair, soft seafoam" },
       { id: "hair-emerald", label: "Emerald Green", prompt: "with emerald green hair, jewel toned" },
-      { id: "hair-rainbow", label: "Rainbow Hair", prompt: "with rainbow colored hair, multi-colored" },
+      { id: "hair-neon-green", label: "Neon Green", prompt: "with neon green hair, bright lime" },
+      { id: "hair-coral", label: "Coral", prompt: "with coral hair, peachy pink orange" },
+      { id: "hair-peach", label: "Peach", prompt: "with peach hair, soft orange-pink" },
+      { id: "hair-tangerine", label: "Tangerine Orange", prompt: "with tangerine orange hair, bright citrus" },
+      // Multi-color & Effects
+      { id: "hair-rainbow", label: "Rainbow Hair", prompt: "with rainbow colored hair, all colors of spectrum" },
       { id: "hair-ombre", label: "Ombre Fade", prompt: "with ombre faded hair, dark to light gradient" },
+      { id: "hair-balayage", label: "Balayage", prompt: "with balayage highlights, hand-painted natural blend" },
       { id: "hair-peekaboo", label: "Peekaboo Color", prompt: "with peekaboo color underneath, hidden surprise" },
       { id: "hair-split-dye", label: "Split Dye", prompt: "with split dye half and half, two-toned" },
+      { id: "hair-money-piece", label: "Money Piece", prompt: "with money piece highlights, face-framing color" },
+      { id: "hair-underlights", label: "Underlights", prompt: "with hidden underlights color, rainbow underneath" },
+      { id: "hair-sunset", label: "Sunset Ombre", prompt: "with sunset ombre hair, pink orange yellow blend" },
+      { id: "hair-galaxy", label: "Galaxy Hair", prompt: "with galaxy hair, purple blue cosmic blend" },
+      { id: "hair-oil-slick", label: "Oil Slick", prompt: "with oil slick hair, dark with rainbow sheen" },
     ],
   },
   {
@@ -801,6 +840,95 @@ const Gallery = ({ items, onDelete, onSelect, showToast }) => {
   );
 };
 
+// Favorites component
+const Favorites = ({ favorites, onApply, onDelete, showToast }) => {
+  if (favorites.length === 0) {
+    return (
+      <div className="gallery-empty">
+        <Star size={48} className="text-gray-600 mb-4" />
+        <p className="text-gray-400">No saved favorites yet</p>
+        <p className="text-sm text-gray-500">Save your favorite style combos for quick access!</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="favorites-list">
+      {favorites.map((fav) => (
+        <div key={fav.id} className="favorite-card" data-testid={`favorite-${fav.id}`}>
+          <div className="favorite-header">
+            <Star size={16} className="text-[hsl(var(--primary))]" fill="currentColor" />
+            <span className="favorite-name">{fav.name}</span>
+          </div>
+          <div className="favorite-details">
+            {fav.body_styles.length > 0 && (
+              <span className="favorite-tag">{fav.body_styles.length} body styles</span>
+            )}
+            {fav.hair_styles.length > 0 && (
+              <span className="favorite-tag">{fav.hair_styles.length} hair styles</span>
+            )}
+            {fav.custom_prompt && (
+              <span className="favorite-tag">+ custom</span>
+            )}
+            <span className="favorite-gender">{fav.gender === 'both' ? 'Auto' : fav.gender}</span>
+          </div>
+          <div className="favorite-actions">
+            <button onClick={() => onApply(fav)} className="favorite-apply-btn" data-testid={`apply-${fav.id}`}>
+              <Sparkles size={14} />Apply
+            </button>
+            <button onClick={() => onDelete(fav.id)} className="favorite-delete-btn" data-testid={`delete-fav-${fav.id}`}>
+              <Trash2 size={14} />
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// Save Favorite Modal
+const SaveFavoriteModal = ({ isOpen, onClose, onSave, bodyStyles, hairStyles, customPrompt, gender }) => {
+  const [name, setName] = useState('');
+  
+  if (!isOpen) return null;
+  
+  const handleSave = () => {
+    if (!name.trim()) return;
+    onSave(name.trim());
+    setName('');
+    onClose();
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={e => e.stopPropagation()}>
+        <h3 className="modal-title">Save as Favorite</h3>
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Give your look a name..."
+          className="modal-input"
+          autoFocus
+          data-testid="favorite-name-input"
+        />
+        <div className="modal-preview">
+          <p className="text-xs text-gray-400">
+            {bodyStyles.length} body styles, {hairStyles.length} hair styles
+            {customPrompt && ', + custom prompt'}
+          </p>
+        </div>
+        <div className="modal-actions">
+          <button onClick={onClose} className="modal-cancel">Cancel</button>
+          <button onClick={handleSave} disabled={!name.trim()} className="modal-save" data-testid="save-favorite-confirm">
+            <Star size={14} />Save Favorite
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Main Index page
 const Index = () => {
   const [uploadedImage, setUploadedImage] = useState(null);
@@ -814,18 +942,21 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState('body');
   const [showComparison, setShowComparison] = useState(false);
   const [gender, setGender] = useState('both');
-  const [currentView, setCurrentView] = useState('create'); // 'create' or 'gallery'
+  const [currentView, setCurrentView] = useState('create'); // 'create', 'gallery', or 'favorites'
   const [galleryItems, setGalleryItems] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [favorites, setFavorites] = useState([]);
+  const [showFavoriteModal, setShowFavoriteModal] = useState(false);
 
   const showToast = (message, type = 'info') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 5000);
   };
 
-  // Load gallery on mount
+  // Load gallery and favorites on mount
   useEffect(() => {
     loadGallery();
+    loadFavorites();
   }, []);
 
   const loadGallery = async () => {
@@ -834,6 +965,15 @@ const Index = () => {
       setGalleryItems(response.data);
     } catch (err) {
       console.error("Failed to load gallery:", err);
+    }
+  };
+
+  const loadFavorites = async () => {
+    try {
+      const response = await axios.get(`${API}/favorites`);
+      setFavorites(response.data);
+    } catch (err) {
+      console.error("Failed to load favorites:", err);
     }
   };
 
@@ -977,6 +1117,63 @@ const Index = () => {
     }
   };
 
+  // Favorites handlers
+  const handleSaveFavorite = async (name) => {
+    try {
+      await axios.post(`${API}/favorites`, {
+        name,
+        body_styles: selectedBodyStyles.map(s => s.id),
+        hair_styles: selectedHairStyles.map(s => s.id),
+        custom_prompt: customBodyPrompt + (customHairPrompt ? ' ' + customHairPrompt : ''),
+        gender
+      });
+      showToast("Saved to favorites!", "success");
+      loadFavorites();
+    } catch (err) {
+      showToast("Failed to save favorite", "error");
+    }
+  };
+
+  const handleApplyFavorite = (fav) => {
+    // Find and apply body styles
+    const bodyStyles = [];
+    fav.body_styles.forEach(id => {
+      styleCategories.forEach(cat => {
+        const found = cat.presets.find(p => p.id === id);
+        if (found) bodyStyles.push(found);
+      });
+    });
+    setSelectedBodyStyles(bodyStyles);
+
+    // Find and apply hair styles
+    const hairStyles = [];
+    fav.hair_styles.forEach(id => {
+      hairCategories.forEach(cat => {
+        const found = cat.presets.find(p => p.id === id);
+        if (found) hairStyles.push(found);
+      });
+    });
+    setSelectedHairStyles(hairStyles);
+
+    // Apply custom prompt and gender
+    if (fav.custom_prompt) {
+      setCustomBodyPrompt(fav.custom_prompt);
+    }
+    setGender(fav.gender);
+    setCurrentView('create');
+    showToast(`Applied "${fav.name}" look!`, "success");
+  };
+
+  const handleDeleteFavorite = async (id) => {
+    try {
+      await axios.delete(`${API}/favorites/${id}`);
+      showToast("Favorite deleted", "success");
+      loadFavorites();
+    } catch (err) {
+      showToast("Failed to delete", "error");
+    }
+  };
+
   const allSelectedStyles = [...selectedBodyStyles, ...selectedHairStyles];
 
   return (
@@ -998,6 +1195,15 @@ const Index = () => {
             >
               <Sparkles size={16} />
               Create
+            </button>
+            <button
+              onClick={() => setCurrentView('favorites')}
+              className={`nav-btn ${currentView === 'favorites' ? 'active' : ''}`}
+              data-testid="nav-favorites"
+            >
+              <Star size={16} />
+              Favorites
+              {favorites.length > 0 && <span className="nav-badge">{favorites.length}</span>}
             </button>
             <button
               onClick={() => setCurrentView('gallery')}
@@ -1023,6 +1229,16 @@ const Index = () => {
               setUploadedImage(item.original_image);
               setCurrentView('create');
             }}
+            showToast={showToast}
+          />
+        </main>
+      ) : currentView === 'favorites' ? (
+        <main className="container py-8">
+          <h2 className="text-xl font-display font-semibold mb-6">Your Favorite Looks</h2>
+          <Favorites 
+            favorites={favorites}
+            onApply={handleApplyFavorite}
+            onDelete={handleDeleteFavorite}
             showToast={showToast}
           />
         </main>
@@ -1093,7 +1309,7 @@ const Index = () => {
           </section>
 
           {/* Generate button */}
-          <div className="flex justify-center animate-fade-in" style={{ animationDelay: "0.2s" }}>
+          <div className="flex justify-center gap-3 animate-fade-in" style={{ animationDelay: "0.2s" }}>
             <button
               onClick={handleGenerate}
               disabled={!uploadedImage || !hasSelection || isGenerating}
@@ -1106,6 +1322,15 @@ const Index = () => {
                 <><Sparkles className="w-5 h-5" />Generate Look</>
               )}
             </button>
+            {hasSelection && (
+              <button
+                onClick={() => setShowFavoriteModal(true)}
+                className="action-btn favorite-btn"
+                data-testid="save-favorite-btn"
+              >
+                <Star size={16} />Save Look
+              </button>
+            )}
           </div>
 
           {/* Result */}
@@ -1160,6 +1385,16 @@ const Index = () => {
           <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
         </div>
       )}
+
+      <SaveFavoriteModal
+        isOpen={showFavoriteModal}
+        onClose={() => setShowFavoriteModal(false)}
+        onSave={handleSaveFavorite}
+        bodyStyles={selectedBodyStyles}
+        hairStyles={selectedHairStyles}
+        customPrompt={customBodyPrompt + customHairPrompt}
+        gender={gender}
+      />
     </div>
   );
 };

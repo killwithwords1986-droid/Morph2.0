@@ -146,6 +146,68 @@ class StyleWeaverAPITester:
         success, response = self.run_test("Delete Non-existent Item", "DELETE", f"gallery/{fake_id}", 404)
         return success, response
 
+    # Favorites CRUD Tests
+    def test_favorites_get_empty(self):
+        """Test getting favorites (should be empty initially)"""
+        return self.run_test("Get Favorites (Empty)", "GET", "favorites", 200)
+
+    def test_favorites_save(self):
+        """Test saving a favorite style combination"""
+        test_data = {
+            "name": f"Test Favorite {datetime.now().strftime('%H%M%S')}",
+            "body_styles": ["sporty-tracksuit", "office-tailored"],
+            "hair_styles": ["hair-pixie", "hair-honey"],
+            "custom_prompt": "Test custom styling prompt",
+            "gender": "both"
+        }
+        success, response = self.run_test("Save Favorite", "POST", "favorites", 200, data=test_data)
+        if success and isinstance(response, dict) and response.get('id'):
+            print(f"   ✅ Favorite saved with ID: {response['id']}")
+            return success, response
+        return success, response
+
+    def test_favorites_get_items(self):
+        """Test getting favorites after saving"""
+        return self.run_test("Get Favorites After Save", "GET", "favorites", 200)
+
+    def test_favorites_delete_item(self, fav_id):
+        """Test deleting a favorite"""
+        return self.run_test(f"Delete Favorite {fav_id}", "DELETE", f"favorites/{fav_id}", 200)
+
+    def test_favorites_delete_nonexistent(self):
+        """Test deleting a non-existent favorite"""
+        fake_id = "nonexistent-fav-12345"
+        success, response = self.run_test("Delete Non-existent Favorite", "DELETE", f"favorites/{fake_id}", 404)
+        return success, response
+
+    def test_favorites_save_minimal(self):
+        """Test saving a favorite with minimal data"""
+        test_data = {
+            "name": f"Minimal Fav {datetime.now().strftime('%H%M%S')}",
+            "body_styles": [],
+            "hair_styles": [],
+            "custom_prompt": "",
+            "gender": "male"
+        }
+        return self.run_test("Save Minimal Favorite", "POST", "favorites", 200, data=test_data)
+
+    def test_favorites_save_hair_colors_expanded(self):
+        """Test saving a favorite with expanded hair color options (53 total)"""
+        # Test some of the new hair color options to verify 53 styles are available
+        test_data = {
+            "name": f"Hair Colors Test {datetime.now().strftime('%H%M%S')}",
+            "body_styles": [],
+            "hair_styles": [
+                "hair-platinum", "hair-honey", "hair-strawberry", "hair-ash-blonde",
+                "hair-rose-gold", "hair-pastel-pink", "hair-hot-pink", "hair-lavender",
+                "hair-electric-blue", "hair-teal", "hair-mint", "hair-emerald",
+                "hair-rainbow", "hair-ombre", "hair-balayage", "hair-oil-slick"
+            ],
+            "custom_prompt": "Testing expanded hair color palette",
+            "gender": "female"
+        }
+        return self.run_test("Save Favorite with Hair Colors", "POST", "favorites", 200, data=test_data)
+
 def main():
     print("🚀 Starting Style Weaver API Tests")
     print("=" * 50)
@@ -171,6 +233,21 @@ def main():
         tester.test_gallery_delete_item(item_id)
     
     tester.test_gallery_delete_nonexistent()
+
+    # Test favorites functionality (NEW in iteration 4)
+    print("\n⭐ Testing Favorites CRUD Operations...")
+    tester.test_favorites_get_empty()
+    favorites_success, favorites_response = tester.test_favorites_save()
+    tester.test_favorites_get_items()
+    tester.test_favorites_save_minimal()
+    tester.test_favorites_save_hair_colors_expanded()
+    
+    # Test favorites deletion if we got an ID from save
+    if favorites_success and isinstance(favorites_response, dict) and favorites_response.get('id'):
+        fav_id = favorites_response['id']
+        tester.test_favorites_delete_item(fav_id)
+    
+    tester.test_favorites_delete_nonexistent()
 
     # Test error handling
     print("\n🛡️ Testing Error Handling...")

@@ -79,6 +79,33 @@ class GalleryItemResponse(BaseModel):
     gender: str
     created_at: str
 
+class FavoriteStyle(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    body_styles: List[str] = []  # List of style IDs
+    hair_styles: List[str] = []  # List of style IDs
+    custom_prompt: str = ""
+    gender: str = "both"
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class FavoriteStyleCreate(BaseModel):
+    name: str
+    body_styles: List[str] = []
+    hair_styles: List[str] = []
+    custom_prompt: str = ""
+    gender: str = "both"
+
+class FavoriteStyleResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    name: str
+    body_styles: List[str]
+    hair_styles: List[str]
+    custom_prompt: str
+    gender: str
+    created_at: str
+
 # Prompt template for restyling with gender
 def get_restyle_prompt(style_prompt: str, gender: str) -> str:
     gender_text = ""
@@ -226,6 +253,48 @@ async def delete_gallery_item(item_id: str):
     result = await db.gallery.delete_one({"id": item_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Item not found")
+    return {"message": "Deleted successfully"}
+
+# Favorites endpoints
+@api_router.post("/favorites", response_model=FavoriteStyleResponse)
+async def save_favorite(fav: FavoriteStyleCreate):
+    """Save a favorite style combination"""
+    try:
+        favorite = FavoriteStyle(
+            name=fav.name,
+            body_styles=fav.body_styles,
+            hair_styles=fav.hair_styles,
+            custom_prompt=fav.custom_prompt,
+            gender=fav.gender
+        )
+        doc = favorite.model_dump()
+        doc['created_at'] = doc['created_at'].isoformat()
+        await db.favorites.insert_one(doc)
+        return FavoriteStyleResponse(
+            id=favorite.id,
+            name=favorite.name,
+            body_styles=favorite.body_styles,
+            hair_styles=favorite.hair_styles,
+            custom_prompt=favorite.custom_prompt,
+            gender=favorite.gender,
+            created_at=doc['created_at']
+        )
+    except Exception as e:
+        logger.error(f"Favorite save error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/favorites", response_model=List[FavoriteStyleResponse])
+async def get_favorites():
+    """Get all saved favorites"""
+    items = await db.favorites.find({}, {"_id": 0}).sort("created_at", -1).to_list(50)
+    return items
+
+@api_router.delete("/favorites/{fav_id}")
+async def delete_favorite(fav_id: str):
+    """Delete a favorite"""
+    result = await db.favorites.delete_one({"id": fav_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Favorite not found")
     return {"message": "Deleted successfully"}
 
 # Include the router in the main app
