@@ -2,7 +2,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import "@/App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import axios from "axios";
-import { Sparkles, Upload, X, ChevronDown, Camera, Download, Share2, Plus, Trash2, Scissors, Image, User, Users, Heart, Star, Bookmark } from 'lucide-react';
+import { Sparkles, Upload, X, ChevronDown, Camera, Download, Plus, Trash2, Scissors, Image, User, Users, Star } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -714,7 +714,15 @@ const ImageUpload = ({ onImageSelect, currentImage, onClear }) => {
           <Camera size={20} />
           <span>Take Photo</span>
         </button>
-        <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={handleChange} className="hidden" />
+        <input 
+          ref={cameraInputRef} 
+          type="file" 
+          accept="image/*" 
+          capture="user"
+          onChange={handleChange} 
+          className="hidden" 
+          data-testid="camera-input"
+        />
       </div>
     </div>
   );
@@ -1061,49 +1069,41 @@ const Index = () => {
 
   const handleDownload = () => {
     if (!resultImage) return;
-    const link = document.createElement('a');
-    link.href = resultImage;
-    link.download = `morph-style-${Date.now()}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showToast("Image downloaded!", "success");
-  };
-
-  const handleShare = async () => {
-    if (!resultImage) return;
     try {
-      // Convert base64 to blob
+      // Convert base64 to blob for reliable download
       const base64Data = resultImage.split(',')[1];
+      const mimeType = resultImage.split(',')[0].split(':')[1].split(';')[0] || 'image/png';
       const byteCharacters = atob(base64Data);
       const byteNumbers = new Array(byteCharacters.length);
       for (let i = 0; i < byteCharacters.length; i++) {
         byteNumbers[i] = byteCharacters.charCodeAt(i);
       }
       const byteArray = new Uint8Array(byteNumbers);
-      const blob = new Blob([byteArray], { type: 'image/png' });
-      const file = new File([blob], 'morph-style.png', { type: 'image/png' });
-
-      if (navigator.share && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          title: 'My MORPH Style',
-          text: 'Check out my AI-generated style from MORPH!',
-          files: [file]
-        });
-        showToast("Shared successfully!", "success");
-      } else {
-        // Fallback: copy image to clipboard or show message
-        try {
-          await navigator.clipboard.write([
-            new ClipboardItem({ 'image/png': blob })
-          ]);
-          showToast("Image copied to clipboard!", "success");
-        } catch {
-          showToast("Use the download button to save and share", "info");
-        }
-      }
+      const blob = new Blob([byteArray], { type: mimeType });
+      
+      // Create object URL and download
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `morph-style-${Date.now()}.png`;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }, 100);
+      
+      showToast("Image downloaded!", "success");
     } catch (err) {
-      showToast("Download the image to share it", "info");
+      // Fallback to direct link
+      const link = document.createElement('a');
+      link.href = resultImage;
+      link.download = `morph-style-${Date.now()}.png`;
+      link.click();
+      showToast("Image downloaded!", "success");
     }
   };
 
@@ -1352,9 +1352,6 @@ const Index = () => {
                   </button>
                   <button onClick={handleDownload} className="action-btn" data-testid="download-btn">
                     <Download size={16} />Download
-                  </button>
-                  <button onClick={handleShare} className="action-btn" data-testid="share-btn">
-                    <Share2 size={16} />Share
                   </button>
                 </div>
               </div>
